@@ -2,11 +2,13 @@ package com.goit.fry.thymeleaf;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -23,15 +25,23 @@ class TimezoneValidateFilterTest {
 	private HttpServletRequest req;
 	private HttpServletResponse resp;
 	private FilterChain chain;
+	private FilterConfig filterConfig;
 	private StringWriter writer;
 
+	@BeforeAll
+	static void init() {
+
+		TemplateEngineFactory.enableFileResolver();
+	}
+
 	@BeforeEach
-	void init() {
+	void initMocks() {
 
 		filter = new TimezoneValidateFilter();
 		req = mock(HttpServletRequest.class);
 		resp = mock(HttpServletResponse.class);
 		chain = mock(FilterChain.class);
+		filterConfig = mock(FilterConfig.class);
 
 		writer = new StringWriter();
 	}
@@ -46,6 +56,7 @@ class TimezoneValidateFilterTest {
 		when(req.getParameter("timezone")).thenReturn(tzStr);
 		try {
 			when(resp.getWriter()).thenReturn(new PrintWriter(writer));
+			filter.init(filterConfig);
 			filter.doFilter(req, resp, chain);
 
 			assertEquals("", writer.toString());
@@ -67,6 +78,7 @@ class TimezoneValidateFilterTest {
 		when(req.getParameter("timezone")).thenReturn(tzStr);
 		try {
 			when(resp.getWriter()).thenReturn(new PrintWriter(writer));
+			filter.init(filterConfig);
 			filter.doFilter(req, resp, chain);
 
 			assertFalse(writer.toString().isEmpty());

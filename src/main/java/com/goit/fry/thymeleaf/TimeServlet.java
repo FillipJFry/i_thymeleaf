@@ -2,15 +2,13 @@ package com.goit.fry.thymeleaf;
 
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
-import org.thymeleaf.templatemode.TemplateMode;
-import org.thymeleaf.templateresolver.FileTemplateResolver;
 
 import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -22,7 +20,14 @@ import java.util.TimeZone;
 public class TimeServlet extends HttpServlet {
 
 	private DateFormat dtFormat;
-	private TemplateEngine engine;
+	private TemplateEngine engine = null;
+
+	public TimeServlet() { }
+
+	TimeServlet(TemplateEngine engine) {
+
+		this.engine = engine;
+	}
 
 	@Override
 	public void init() {
@@ -30,15 +35,8 @@ public class TimeServlet extends HttpServlet {
 		dtFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		dtFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-		engine = new TemplateEngine();
-
-		FileTemplateResolver resolver = new FileTemplateResolver();
-		resolver.setPrefix("./templates/");
-		resolver.setSuffix(".html");
-		resolver.setTemplateMode(TemplateMode.HTML);
-		resolver.setOrder(engine.getTemplateResolvers().size());
-		resolver.setCacheable(false);
-		engine.addTemplateResolver(resolver);
+		if (engine == null)
+			engine = TemplateEngineFactory.getEngine(getServletContext());
 	}
 
 	@Override
@@ -50,11 +48,14 @@ public class TimeServlet extends HttpServlet {
 			dtFormat.setTimeZone(TimeZone.getTimeZone(timezoneStr));
 		}
 		else {
-			dtFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-			timezoneStr = "UTC";
-		}
+			timezoneStr = getTimeZoneFromCookie(req);
 
-		resp.setContentType("text/html");
+			if (timezoneStr == null)
+				timezoneStr = "UTC";
+			dtFormat.setTimeZone(TimeZone.getTimeZone(timezoneStr));
+		}
+		resp.addCookie(new Cookie("tz", timezoneStr));
+
 		Map<String, Object> vars = new HashMap<>();
 		vars.put("tzDescr", timezoneStr + " time");
 		vars.put("timeStr", dtFormat.format(new Date()) + ' ' + timezoneStr);
@@ -64,6 +65,16 @@ public class TimeServlet extends HttpServlet {
 
 			engine.process("time", context, out);
 		}
+	}
+
+	private String getTimeZoneFromCookie(HttpServletRequest req) {
+
+		Cookie[] cookies = req.getCookies();
+		for (Cookie cookie : cookies)
+			if ("tz".equals(cookie.getName()))
+				return cookie.getValue();
+
+		return null;
 	}
 
 	@Override

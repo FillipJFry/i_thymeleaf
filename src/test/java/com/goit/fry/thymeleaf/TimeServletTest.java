@@ -18,8 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class TimeServletTest {
 
@@ -30,7 +29,12 @@ class TimeServletTest {
 	static void init() {
 
 		try {
-			htmlTempl = Files.readString(Path.of("templates", "time.html"));
+
+			Path templatesPath = TemplateEngineFactory.getTemplatesPath();
+			templatesPath = templatesPath.resolve("time.html");
+
+			htmlTempl = Files.readString(templatesPath);
+			TemplateEngineFactory.enableFileResolver();
 		}
 		catch (IOException e) {
 
@@ -42,19 +46,21 @@ class TimeServletTest {
 	void service() {
 
 		logger.info("testing TimeServlet::service()");
-		TimeServlet servlet = new TimeServlet();
+		TimeServlet servlet = new TimeServlet(TemplateEngineFactory.getEngine(null));
 		HttpServletRequest req = mock(HttpServletRequest.class);
 		HttpServletResponse resp = mock(HttpServletResponse.class);
 
 		StringWriter writer = new StringWriter();
 		try {
 			when(resp.getWriter()).thenReturn(new PrintWriter(writer));
+
 			servlet.init();
 			servlet.service(req, resp);
 			servlet.destroy();
 		}
 		catch (Exception e) {
 
+			e.printStackTrace();
 			assertNull(e);
 		}
 
