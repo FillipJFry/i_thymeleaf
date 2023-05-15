@@ -29,6 +29,11 @@ dependencies {
     testImplementation 'org.slf4j:slf4j-log4j12:2.0.5'
 }
 
+war {
+
+    archiveFileName='timesrv.war'
+}
+
 tasks.named('test') {
 
     useJUnitPlatform()
